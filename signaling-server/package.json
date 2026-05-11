@@ -1,0 +1,16 @@
+{
+  "name": "webrtc-kmp-signaling",
+  "version": "1.0.0",
+  "description": "WebSocket signaling server for the WebRTC KMP demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
