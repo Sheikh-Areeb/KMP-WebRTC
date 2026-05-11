@@ -49,9 +49,12 @@ class SignalingClient(private val serverUrl: String) {
     private var session: WebSocketSession? = null
 
     fun connect(onConnected: () -> Unit, onDisconnected: () -> Unit) {
+        println("[Signaling] connect() called, serverUrl=$serverUrl")
         scope.launch {
             try {
+                println("[Signaling] opening webSocket")
                 client.webSocket(serverUrl) {
+                    println("[Signaling] webSocket opened")
                     session = this
                     onConnected()
 
@@ -74,8 +77,10 @@ class SignalingClient(private val serverUrl: String) {
                     }
                 }
             } catch (e: Exception) {
-                println("SignalingClient: connection error: $e")
+                println("[Signaling] connection error (${e::class.simpleName}): ${e.message}")
+                e.printStackTrace()
             } finally {
+                println("[Signaling] finally — session cleared, onDisconnected firing")
                 session = null
                 onDisconnected()
             }

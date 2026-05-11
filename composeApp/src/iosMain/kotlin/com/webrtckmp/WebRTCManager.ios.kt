@@ -62,6 +62,7 @@ actual class WebRTCManager actual constructor(
     // ── Public API ────────────────────────────────────────────────────────
 
     actual fun initializePeerConnection() {
+        println("[WebRTC.ios] initializePeerConnection: building factory")
         val encoderFactory = RTCDefaultVideoEncoderFactory()
         val decoderFactory = RTCDefaultVideoDecoderFactory()
 
@@ -69,6 +70,7 @@ actual class WebRTCManager actual constructor(
             encoderFactory = encoderFactory,
             decoderFactory = decoderFactory,
         )
+        println("[WebRTC.ios] factory built: ${factory != null}")
 
         val config = RTCConfiguration().apply {
             iceServers = this@WebRTCManager.iceServers
@@ -86,38 +88,52 @@ actual class WebRTCManager actual constructor(
             ),
             delegate = PeerConnectionDelegate(),
         )
+        println("[WebRTC.ios] peerConnection created: ${peerConnection != null}")
     }
 
     actual fun startLocalCapture() {
-        val f = factory ?: return
+        println("[WebRTC.ios] startLocalCapture: entered")
+        val f = factory ?: run { println("[WebRTC.ios] startLocalCapture: factory is null, bailing"); return }
 
-        // ── Video ──────────────────────────────────────────────────────────
+        // ── Video track (always added so the SDP has an m=video line, even
+        // when there's no camera — e.g. iOS simulator).  Without this the
+        // remote peer can't negotiate video and ICE/DTLS may fail entirely.
         val videoSource = f.videoSource()
         val vTrack = f.videoTrackWithSource(videoSource, trackId = "local_video_0")
         localVideoTrack = vTrack
+        println("[WebRTC.ios] video track created")
 
+        // ── Audio track (works on simulator) ──────────────────────────────
+        val audioSource = f.audioSourceWithConstraints(null)
+        val audioTrack = f.audioTrackWithSource(audioSource, trackId = "local_audio_0")
+        println("[WebRTC.ios] audio track created")
+
+        // ── Attach tracks to the peer connection BEFORE SDP is generated ──
+        peerConnection?.addTrack(vTrack, streamIds = listOf("local_stream"))
+        peerConnection?.addTrack(audioTrack, streamIds = listOf("local_stream"))
+        println("[WebRTC.ios] tracks added to peer connection")
+
+        // ── Camera capture (best-effort; missing on simulator) ────────────
         val cap = RTCCameraVideoCapturer(delegate = videoSource)
         capturer = cap
 
         @Suppress("UNCHECKED_CAST")
         val allDevices = RTCCameraVideoCapturer.captureDevices() as List<AVCaptureDevice>
-        val device: AVCaptureDevice = allDevices.firstOrNull() ?: return
+        println("[WebRTC.ios] captureDevices count = ${allDevices.size}")
+        if (allDevices.isEmpty()) {
+            println("[WebRTC.ios] no camera available — proceeding receive-only for video")
+        } else {
+            val device = allDevices.first()
+            @Suppress("UNCHECKED_CAST")
+            val formats = RTCCameraVideoCapturer.supportedFormatsForDevice(device) as List<AVCaptureDeviceFormat>
+            val format = formats.lastOrNull()
+            if (format != null) {
+                cap.startCaptureWithDevice(device, format = format, fps = 30L)
+                println("[WebRTC.ios] camera capture started")
+            }
+        }
 
-        @Suppress("UNCHECKED_CAST")
-        val formats = RTCCameraVideoCapturer.supportedFormatsForDevice(device) as List<AVCaptureDeviceFormat>
-        val format = formats.lastOrNull() ?: return   // last = highest resolution
-
-        cap.startCaptureWithDevice(device, format = format, fps = 30L)
-
-        // ── Audio ──────────────────────────────────────────────────────────
-        val audioSource = f.audioSourceWithConstraints(null)
-        val audioTrack = f.audioTrackWithSource(audioSource, trackId = "local_audio_0")
-
-        // Add both tracks; the stream ID groups them in the SDP
-        peerConnection?.addTrack(vTrack, streamIds = listOf("local_stream"))
-        peerConnection?.addTrack(audioTrack, streamIds = listOf("local_stream"))
-
-        // If a renderer was already attached before tracks were ready, connect it now
+        // If a renderer was attached before tracks existed, connect it now
         pendingLocalRenderer?.let { vTrack.addRenderer(it) }
     }
 

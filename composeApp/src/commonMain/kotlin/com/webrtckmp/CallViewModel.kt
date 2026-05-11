@@ -61,6 +61,7 @@ class CallViewModel(
         // not leak the old WebRTCManager / SignalingClient / collector job.
         cleanup()
         _callState.value = CallState.Connecting
+        println("[ViewModel] joinRoom: roomId=$roomId, userId=$userId, serverUrl=$serverUrl")
 
         val rtcCallbacks = WebRTCCallbacks(
             onLocalIceCandidate = { candidate, sdpMid, sdpMLineIndex ->
@@ -103,8 +104,11 @@ class CallViewModel(
 
         val rtc = WebRTCManager(context, rtcCallbacks)
         webRTCManager = rtc
+        println("[ViewModel] before initializePeerConnection")
         rtc.initializePeerConnection()
+        println("[ViewModel] before startLocalCapture")
         rtc.startLocalCapture()
+        println("[ViewModel] WebRTC ready, creating signaling client")
 
         val client = SignalingClient(serverUrl)
         signalingClient = client

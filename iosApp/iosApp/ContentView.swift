@@ -2,8 +2,13 @@ import SwiftUI
 import ComposeApp
 
 struct ContentView: View {
-    // iOS has no "context" — we pass an empty PlatformContext
-    private let viewModel = CallViewModel(context: PlatformContext(), serverUrl: "ws://localhost:3000")
+    // @State keeps the ViewModel alive across SwiftUI view re-creations.
+    // A plain `let` here would build a new CallViewModel every time SwiftUI
+    // re-runs the body, leaking CoroutineScopes and stacking WebRTC state.
+    @State private var viewModel = CallViewModel(
+        context: PlatformContext(),
+        serverUrl: "ws://localhost:3000",
+    )
 
     var body: some View {
         ComposeView(viewModel: viewModel)

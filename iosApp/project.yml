@@ -16,6 +16,10 @@ targets:
           - "**/*.md"
     info:
       path: iosApp/Info.plist
+      properties:
+        NSCameraUsageDescription: This app needs camera access to send video in a call.
+        NSMicrophoneUsageDescription: This app needs microphone access to send audio in a call.
+        CADisableMinimumFrameDurationOnPhone: true
     settings:
       base:
         SWIFT_VERSION: "5.0"

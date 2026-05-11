@@ -18,5 +18,11 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to send video in a call.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access to send audio in a call.</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 </dict>
 </plist>
