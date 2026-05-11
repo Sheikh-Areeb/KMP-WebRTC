@@ -15,17 +15,14 @@ target 'iosApp' do
   # KMP framework — path points to the composeApp module where the .podspec is generated
   pod 'composeApp', :path => '../composeApp/'
 
-  # WebRTC native framework — Metal-accelerated, Apache 2.0 licensed
-  pod 'GoogleWebRTC', '~> 1.1'
+  # WebRTC native framework — Stream's maintained xcframework (WebRTC M137)
+  # with proper arm64-simulator slice. No more Rosetta workaround needed.
+  pod 'StreamWebRTC', '~> 137.0'
 end
 
-# GoogleWebRTC 1.1.x ships an arm64 slice without the iOS-simulator target bit,
-# so arm64 simulator builds fail to link.  Exclude arm64 for simulator targets
-# (Rosetta runs the x86_64 slice on Apple Silicon Macs).
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       # Xcode build phase shells don't inherit the user's JAVA_HOME.
       # Exposing it as a build setting makes it available to the Gradle
       # syncFramework script that the KMP CocoaPods plugin injects.

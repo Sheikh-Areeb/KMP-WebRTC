@@ -43,11 +43,16 @@ kotlin {
         ios.deploymentTarget = "14.0"
         podfile = project.file("../iosApp/Podfile")
 
-        // GoogleWebRTC pod → importable as `import cocoapods.GoogleWebRTC.*` in iosMain
-        pod("GoogleWebRTC") {
-            version = "~> 1.1"
-            moduleName = "WebRTC"          // the actual ObjC module name inside the pod
-            packageName = "cocoapods.GoogleWebRTC"  // keeps existing Kotlin imports unchanged
+        // StreamWebRTC — Stream's actively-maintained WebRTC iOS binary
+        // (mirrors stream-webrtc-android on the Android side). Ships as an
+        // xcframework with proper arm64-simulator / arm64-device / x86_64
+        // slices, so we no longer need EXCLUDED_ARCHS=arm64 for simulators.
+        // The framework module name is still `WebRTC` (intentional drop-in
+        // for the old GoogleWebRTC pod at the ObjC level).
+        pod("StreamWebRTC") {
+            version = "~> 137.0"
+            moduleName = "WebRTC"
+            packageName = "cocoapods.StreamWebRTC"
             // -fmodules lets the compiler find the WebRTC umbrella module
             extraOpts += listOf("-compiler-option", "-fmodules")
         }

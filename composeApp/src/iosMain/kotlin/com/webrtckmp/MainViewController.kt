@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeUIViewController
-import cocoapods.GoogleWebRTC.RTCEAGLVideoView
+import cocoapods.StreamWebRTC.RTCMTLVideoView
 
 // Called from ContentView.swift to mount the shared Compose tree.
 fun MainViewController(viewModel: CallViewModel) = ComposeUIViewController {
@@ -26,10 +26,13 @@ fun MainViewController(viewModel: CallViewModel) = ComposeUIViewController {
 }
 
 /**
- * Hosts two RTCEAGLVideoView instances inside Compose using UIKitView.
+ * Hosts two RTCMTLVideoView instances inside Compose using UIKitView.
  *
- * RTCEAGLVideoView is a Metal-accelerated UIView that renders WebRTC video
- * frames directly from the GPU pipeline — no CPU copy needed.
+ * RTCMTLVideoView is a Metal-accelerated UIView that renders WebRTC video
+ * frames directly from the GPU pipeline — no CPU copy needed.  Metal works
+ * across all xcframework slices that StreamWebRTC ships (arm64 device,
+ * arm64 simulator, x86_64 simulator) so we no longer need the OpenGL ES
+ * fallback that the old GoogleWebRTC 1.1.x pod required.
  *
  * UIKitView is Compose Multiplatform's bridge for embedding any UIView
  * inside a Compose layout.  The factory lambda runs once on the main thread
@@ -37,8 +40,8 @@ fun MainViewController(viewModel: CallViewModel) = ComposeUIViewController {
  */
 @Composable
 private fun IosVideoLayer(viewModel: CallViewModel) {
-    val localRenderer  = remember { mutableStateOf<RTCEAGLVideoView?>(null) }
-    val remoteRenderer = remember { mutableStateOf<RTCEAGLVideoView?>(null) }
+    val localRenderer  = remember { mutableStateOf<RTCMTLVideoView?>(null) }
+    val remoteRenderer = remember { mutableStateOf<RTCMTLVideoView?>(null) }
 
     // Once both surfaces exist, register them with WebRTCManager.
     // This mirrors the exact same pattern used in Android's MainActivity.
@@ -52,7 +55,7 @@ private fun IosVideoLayer(viewModel: CallViewModel) {
     androidx.compose.ui.interop.UIKitView(
         factory = {
             // CGRectZero is fine; Compose drives the frame via the modifier
-            RTCEAGLVideoView().also {
+            RTCMTLVideoView().also {
                 remoteRenderer.value = it
             }
         },
@@ -63,7 +66,7 @@ private fun IosVideoLayer(viewModel: CallViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         androidx.compose.ui.interop.UIKitView(
             factory = {
-                RTCEAGLVideoView().also {
+                RTCMTLVideoView().also {
                     localRenderer.value = it
                 }
             },
